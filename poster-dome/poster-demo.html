@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>移动端h5海报截屏</title>
+		<meta name="apple-mobile-web-app-title" content="">
+		<meta name="keywords" content="" />
+		<!--这个也是iphone私有标签，允许全屏浏览。-->
+		<meta content="yes" name="apple-mobile-web-app-capable">
+		<!--iphone的私有标签，iphone顶端状态条的样式。-->
+		<meta content="black" name="apple-mobile-web-app-status-bar-style">
+		<!--禁止email识别-->
+		<meta content="email=no" name="format-detection">
+		<meta name="viewport" content="user-scalable=no">
+		<meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+		<script src="./js/flexible.js" defer="defer"></script>
+		<script src="./js/html2canvas.js" defer="defer"></script>
+		<script src="./js/vue-2.4.2.min.js"></script>
+	</head>
+	<body>
+		<div id="app">
+			<div id="img" style="width: 100%;">
+				<p class="top">这是头部，可以放logo或者文字图片</p>
+				<div class="div_qrcode">
+					<img src="img/qrcode.png" class="qrCode"/>
+				</div>
+				<p class="bottom">这是底部，可以放一些修饰的文字或者图片</p>
+			</div>
+			
+			<center>
+				<p class="setcharity" id="setcharity"></p>
+			</center>
+			
+			<!--生成图片按钮-->
+			<div class="generatePicture" data-html2canvas-ignore @click="generateImage" v-show="afterCanvasImageHide">
+				<p class="optText" id="optText">生成海报</p>
+			</div>
+
+			<!--生成的图片的存放容器-->
+			<div class="shareImg" id="shareImg">
+
+			</div>
+		</div>
+		<div class="zz" id="zz"></div>
+	</body>
+	<style>
+		html,
+		body {
+			height: 100%;
+			width: 100%;
+			margin: 0rem;
+			padding: 0rem;
+			font-size: 16px;
+		}
+		#app {
+			overflow: hidden;
+			position: relative;
+			width: 100%;
+		}
+		#img{
+		    background:#B22222;
+			width: 100%;
+			margin: 0rem;
+			padding: 0rem;
+		}
+		
+		.div_qrcode{
+			width: 100%;
+			text-align: center;
+		}
+		.qrCode{
+			width: 36%;
+			margin-top: 10%;
+		}
+
+
+		.generatePicture {
+			z-index: 999;
+			width: 40%;
+			height: 2rem;
+			position: fixed;
+			bottom: 0.5rem;
+			right: 30%;
+			overflow: hidden;
+		}
+
+
+		.generatePicture .optText {
+			text-align: center;
+			font-size: 0.4rem;
+			height: 1rem;
+			line-height: 1rem;
+			width: 100%;
+			border-radius: 0.1rem;
+			color: #FFFDEF;
+			background-color: #B22222;
+		}
+
+		.paragraph_tab {
+			width: 100%;
+			margin-top: 1.8rem;
+		}
+
+		.paragraph_tab td {
+			width: 50%;
+		}
+
+		
+
+		.setcharity {
+			font-size: 0.4rem;
+			color: #FFFDEF;
+			z-index: 10;
+			position: fixed;
+			top: 1rem;
+			bottom: 0.5rem;
+			display: none;
+			margin-left: 25%;
+			width: 50%;
+			text-align: center;
+		}
+
+		.shareImg {
+			z-index: 10;
+			opacity: 1;
+			position: absolute;
+			top: 2rem;
+			width: 85%;
+			height: 100%;
+			left: 7.5%;
+		}
+
+		.shareImg img {
+			width: 100%;
+
+			/* filter:progid:DXImageTransform.Microsoft.Shadow(color=#D0D0D0,direction=120,strength=3);
+			-moz-box-shadow: 0rem 0rem 1rem  #999999;
+			-webkit-box-shadow: 0rem 0rem 1rem  #999999;
+			box-shadow:0rem 0rem 1rem  #999999; */
+			/*pointer-events: none;*/
+		}
+
+		.zz {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #000000;
+			opacity: 0.7;
+			display: none;
+			z-index: 5;
+			display: none;
+		}
+	</style>
+	<script>
+		var vm = new Vue({
+			el: '#app',
+			data: function() {
+				return {
+					afterCanvasImageHide: true,
+					showToast: false,
+					avatar: ''
+				};
+			},
+			mounted: function() {
+				this.$nextTick(function() {
+					var _this = this;
+
+					// 用base64展示html中要显示的图片（如果这个图片地址是服务端链接，图片链接需要服务端允许跨域，本地图片可以不用转base64）
+					// 因为直接使用服务端地址链接，canvas.toDataUrl API抛出异常：
+					// Failed to execute 'toDataURL' on 'HTMLCanvasElement': Tainted canvases may not be exported. ==> 受污染的画布不能导出
+					var imgUrl1 =
+						'http://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTKVkoe7Viae4lreoZBybEywysxHlnlqplGTbaJLQI7pV8W5KMFK1DqBrNntO5O9wT0YYP9cgP6m4dA/132';
+					_this.img2base64(imgUrl1, 'Anonymous').then(function(res) {
+						_this.avatar = res;
+					});
+				});
+			},
+			methods: {
+				/**
+				 * 根据 window.devicePixelRatio 获取像素比
+				 * @returns {number}
+				 * @constructor
+				 */
+				getDpr: function() {
+					if (window.devicePixelRatio && window.devicePixelRatio > 1) {
+						return window.devicePixelRatio;
+					}
+					return 1;
+				},
+
+				/**
+				 * 将传入值转为整数
+				 * @param value
+				 * @returns {number}
+				 */
+				parseValue: function(value) {
+					return parseInt(value, 10);
+				},
+
+				// 将图片转为base64格式
+				img2base64: function(url, crossOrigin) {
+					return new Promise(resolve => {
+						const img = new Image();
+
+						img.onload = () => {
+							const c = document.createElement('canvas');
+
+							c.width = img.naturalWidth;
+							c.height = img.naturalHeight;
+
+							const cxt = c.getContext('2d');
+
+							cxt.drawImage(img, 0, 0);
+
+							// 得到图片的base64编码数据
+							resolve(c.toDataURL('image/png'));
+						};
+
+						// 结合合适的CORS响应头，实现在画布中使用跨域<img>元素的图像
+						crossOrigin && img.setAttribute('crossOrigin', crossOrigin);
+						img.src = url;
+					});
+				},
+
+				/**
+				 * 生成图片
+				 */
+				generateImage: function() {
+					var _this = this;
+					document.getElementById('setcharity').style.display = "block";
+					document.getElementById('optText').innerText = "生成中...";
+					document.getElementById('optText').style.backgroundColor = "#D0D0D0";
+					document.getElementById('optText').style.disabled = true;
+
+					// 获取想要转换的dom节点
+					// var dom = document.querySelector('body');
+					var dom = document.getElementById('img');
+					var box = window.getComputedStyle(dom);
+
+					// dom节点计算后宽高
+					var width = _this.parseValue(box.width);
+					var height = _this.parseValue(box.height);
+
+					// 获取像素比
+					var scaleBy = _this.getDpr();
+
+					// 创建自定义的canvas元素
+					var canvas = document.createElement('canvas');
+
+					// 设置canvas元素属性宽高为 DOM 节点宽高 * 像素比
+					canvas.width = width * scaleBy;
+					canvas.height = height * scaleBy;
+
+					// 设置canvas css 宽高为DOM节点宽高
+					canvas.style.width = width + 'px';
+					canvas.style.height = height + 'px';
+
+					// 获取画笔
+					var context = canvas.getContext('2d');
+
+					// 将所有绘制内容放大像素比倍
+					context.scale(scaleBy, scaleBy);
+
+					// 设置需要生成的图片的大小，不限于可视区域（即可保存长图）
+					var w = document.getElementById('img').style.width;
+					var h = document.getElementById('img').style.height;
+
+					html2canvas(dom, {
+						allowTaint: true,
+						width: w,
+						height: h,
+						useCORS: true
+					}).then(function(canvas) {
+						// 将canvas转换成图片渲染到页面上
+						var url = canvas.toDataURL('image/png'); // base64数据
+						var image = new Image();
+						image.src = url;
+						document.getElementById('shareImg').appendChild(image);
+						document.getElementById('setcharity').innerText = "长按保存海报至相册";
+						document.getElementById('zz').style.display = "block";
+						_this.afterCanvasImageHide = false;
+						_this.showToast = true;
+						setTimeout(function() {
+							_this.showToast = false;
+						}, 1000);
+
+					});
+
+				}
+			}
+		});
+	</script>
+</html>
